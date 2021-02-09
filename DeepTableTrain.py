@@ -108,14 +108,12 @@ if __name__ == "__main__":
     embedding_flag = 1
     learning_r = float(lrs)
     epoch_s = int(epochs)
-    filepath = md1 + "/model" + "-{epoch:02d}-{val_loss:.4f}-{val_acc:.4f}-{loss:.4f}-{acc:.4f}.hdf5"
+    filepath = md1 + "/model" + "-{epoch:02d}.hdf5"
 
     # read train samples
     X_train, y_train, dictionary = transform_tables(inp, "train")
-
     # read embedding vector
     embedding_matrix = read_embeddings(dictionary, emb_vec)
-
     # model initialization and training
     final_model = deep_table_model((MAX_COL, MAX_COL_LENGTH, MAX_CELL_LENGTH,), dictionary, embedding_matrix,
                                    embedding_flag)
