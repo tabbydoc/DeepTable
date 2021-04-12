@@ -1,3 +1,9 @@
 __pycache__
 out
+out2
+out_3k
 *.csv
+out_test
+model
+cvs_dataset.pickle
+venv

@@ -1,42 +1,40 @@
 from inputvars import *
-
-epochs, md1, lrs, inp, emb_vec = inputvarsTrain(sys.argv[1:], sys.argv[0])
-import numpy as np
 import gensim
 from gensim.models.keyedvectors import KeyedVectors
-import re
-import random
-import pickle
-from keras_self_attention import SeqSelfAttention
-import sys
-import os
-
-os.environ['KERAS_BACKEND'] = 'tensorflow'
-import keras
 from keras import regularizers
-from keras.layers import Embedding, Dense, Input, Flatten, Conv1D, Conv2D, MaxPooling1D, Embedding, Concatenate, \
-    Dropout, AveragePooling1D, LSTM, GRU, Bidirectional, TimeDistributed, Convolution2D, MaxPooling2D, AveragePooling2D, \
-    Permute, Activation, Reshape, BatchNormalization, Permute, Activation, Reshape, BatchNormalization, RepeatVector
-from keras.layers.core import Permute
-from keras.models import Model, Sequential, load_model
+from keras.layers import Dense, Input, Flatten, Embedding, Dropout, LSTM, Bidirectional, TimeDistributed, MaxPooling2D, \
+    Reshape
+from keras.models import Model
 from keras.callbacks import ModelCheckpoint
-from keras import backend as K
-
-np.random.seed(813306)
 import tensorflow
-
-tensorflow.random.set_seed(2)
 from input_transformation import *
+
+epochs, md1, lrs, inp, emb_vec = inputvarsTrain(sys.argv[1:], sys.argv[0])
+os.environ['KERAS_BACKEND'] = 'tensorflow'
+np.random.seed(813306)
+tensorflow.random.set_seed(2)
+
+##########################
+config = tensorflow.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tensorflow.compat.v1.Session(config=config)
+##########################
+EMBENDING_LEN = 300
 
 
 def read_embeddings(dictionary, emb_file):
-    modelemb = gensim.models.KeyedVectors.load_word2vec_format(emb_file, binary=True)
-    w2v = dict(zip(modelemb.index2word, modelemb.syn0))
-    embedding_matrix = np.zeros((len(dictionary) + 1, 200))
-
+    # modelemb = gensim.models.KeyedVectors.load_word2vec_format(emb_file, binary=True)
+    modelemb = gensim.models.FastText.load_fasttext_format(emb_file)
+    embedding_matrix = np.zeros((len(dictionary) + 1, EMBENDING_LEN))
     for j, i in dictionary.items():
-        if w2v.get(j) is not None:
-            embedding_matrix[i] = w2v[j]
+        embedding_matrix[i] = modelemb[j].tolist()
+
+    # w2v = dict(zip(modelemb.index2word, modelemb.syn0))
+    # embedding_matrix = np.zeros((len(dictionary) + 1, 200))
+    #
+    # for j, i in dictionary.items():
+    #     if w2v.get(j) is not None:
+    #         embedding_matrix[i] = w2v[j]
 
     return embedding_matrix
 
@@ -44,10 +42,10 @@ def read_embeddings(dictionary, emb_file):
 def cell_encoder(input_shape, dic_length, embedding_matrix, embedding_flag):
     r_in = Input(shape=input_shape)
     if embedding_flag == 1:
-        c_emb = Embedding(dic_length, 200, weights=[embedding_matrix], input_length=input_shape[-1], trainable=True)(
+        c_emb = Embedding(dic_length, EMBENDING_LEN, weights=[embedding_matrix], input_length=input_shape[-1], trainable=True)(
             r_in)
     else:
-        c_emb = Embedding(dic_length, 200, input_length=input_shape[-1], trainable=True)(r_in)
+        c_emb = Embedding(dic_length, EMBENDING_LEN, input_length=input_shape[-1], trainable=True)(r_in)
     c_lstm = Bidirectional(LSTM(50))(c_emb)
     c_dense = Dense(100, activation='relu')(c_lstm)
     c_dense = Dropout(0.1)(c_dense)
@@ -121,6 +119,6 @@ if __name__ == "__main__":
                         metrics=['accuracy'])
     callbacks_list = [
         ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False,
-                        mode='min', period=1)]
+                        mode='min', period=100)]
     final_model.fit(X_train, y_train, epochs=epoch_s, verbose=1, validation_split=0.25, shuffle=True,
                     callbacks=callbacks_list)

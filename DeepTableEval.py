@@ -1,3 +1,5 @@
+import tensorflow
+
 from inputvars import *
 
 md1, output, inp = inputvarsEval(sys.argv[1:], sys.argv[0])
@@ -20,6 +22,10 @@ from keras import backend as K
 
 np.random.seed(813306)
 from input_transformation import *
+
+config = tensorflow.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tensorflow.compat.v1.Session(config=config)
 
 
 def read_input(inp):
